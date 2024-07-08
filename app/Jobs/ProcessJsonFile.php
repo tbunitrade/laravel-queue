@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Jobs;
 
 use Illuminate\Bus\Queueable;
@@ -10,6 +11,7 @@ use Illuminate\Support\Facades\Storage;
 use App\Models\Product;
 use App\Models\ProductPrice;
 use Carbon\Carbon;
+use Log;
 
 class ProcessJsonFile implements ShouldQueue
 {
@@ -24,17 +26,21 @@ class ProcessJsonFile implements ShouldQueue
 
     public function handle()
     {
+        Log::info('Starting to process file: ' . $this->filePath);
+
         $fileContents = Storage::get($this->filePath);
         $products = json_decode($fileContents, true);
 
         foreach ($products as $productData) {
-            #$product = Product::updateOrCreate(
-            $product = Product::firstOrNew(
-                ['name' => $productData['name']],
-            );
+            Log::info('Processing product: ' . $productData['name']);
 
+            $product = Product::firstOrNew(
+                ['name' => $productData['name']]
+            );
             $product->description = $productData['description'];
             $product->save();
+
+            Log::info('Saved product: ' . $product->name);
 
             $productPrice = ProductPrice::firstOrNew(
                 [
@@ -44,6 +50,11 @@ class ProcessJsonFile implements ShouldQueue
             );
             $productPrice->price = $productData['price'];
             $productPrice->save();
+
+            Log::info('Saved product price: ' . $productPrice->price);
         }
+
+        Log::info('Finished processing file: ' . $this->filePath);
     }
 }
+
