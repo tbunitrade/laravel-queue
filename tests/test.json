@@ -2,19 +2,25 @@
     {
         "name": "Product 1",
         "description": "Description for product 1",
-        "price": 19.99,
+        "price": 29.99,
         "date": "2024-07-01"
     },
     {
         "name": "Product 2",
         "description": "Description for product 2",
-        "price": 29.99,
+        "price": 19.99,
         "date": "2024-07-01"
     },
     {
         "name": "Product 3",
         "description": "Description for product 3",
-        "price": 39.99,
+        "price": 59.99,
         "date": "2024-07-01"
+    },
+    {
+        "name": "Product Sonich",
+        "description": "Sonich Description for product 3",
+        "price": 39.99,
+        "date": "2024-07-13"
     }
 ]

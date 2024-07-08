@@ -1,60 +1,43 @@
 <?php
-
 namespace App\Jobs;
 
+use App\Models\Product;
+use App\Models\ProductPrice;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Storage;
-use App\Models\Product;
-use App\Models\ProductPrice;
-use Carbon\Carbon;
-use Log;
 
 class ProcessJsonFile implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    protected $filePath;
+    protected $path;
 
-    public function __construct($filePath)
+    public function __construct($path)
     {
-        $this->filePath = $filePath;
+        $this->path = $path;
     }
 
     public function handle()
     {
-        Log::info('Starting to process file: ' . $this->filePath);
+        $json = Storage::get($this->path);
+        $data = json_decode($json, true);
 
-        $fileContents = Storage::get($this->filePath);
-        $products = json_decode($fileContents, true);
-
-        foreach ($products as $productData) {
-            Log::info('Processing product: ' . $productData['name']);
-
-            $product = Product::firstOrNew(
-                ['name' => $productData['name']]
+        foreach ($data as $item) {
+            $product = Product::updateOrCreate(
+                ['name' => $item['name']],
+                ['description' => $item['description']]
             );
-            $product->description = $productData['description'];
-            $product->save();
 
-            Log::info('Saved product: ' . $product->name);
-
-            $productPrice = ProductPrice::firstOrNew(
-                [
-                    'product_id' => $product->id,
-                    'date' => Carbon::parse($productData['date']),
-                ]
+            ProductPrice::updateOrCreate(
+                ['product_id' => $product->id, 'date' => $item['date']],
+                ['price' => $item['price']]
             );
-            $productPrice->price = $productData['price'];
-            $productPrice->save();
-
-            Log::info('Saved product price: ' . $productPrice->price);
         }
 
-        Log::info('Finished processing file: ' . $this->filePath);
+        CalculateAggregates::dispatch();
     }
 }
-

@@ -1,17 +1,15 @@
 <?php
-
 namespace App\Jobs;
 
+use App\Models\Product;
+use App\Models\ProductPrice;
+use App\Models.ProductPriceAggregate;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use App\Models\Product;
-use App\Models\ProductPrice;
-use App\Models\ProductPriceAggregate;
 use Carbon\Carbon;
-use Log;
 
 class CalculateAggregates implements ShouldQueue
 {
@@ -19,8 +17,6 @@ class CalculateAggregates implements ShouldQueue
 
     public function handle()
     {
-        Log::info('Starting to calculate aggregates.');
-
         $periods = [
             '3_days' => 3,
             '7_days' => 7,
@@ -28,24 +24,18 @@ class CalculateAggregates implements ShouldQueue
         ];
 
         foreach (Product::all() as $product) {
-            Log::info('Processing product: ' . $product->name);
-
             foreach ($periods as $period => $days) {
+                // Использование Carbon для вычисления даты, которая находится на $days назад от текущей даты
                 $averagePrice = ProductPrice::where('product_id', $product->id)
                     ->where('date', '>=', Carbon::today()->subDays($days))
                     ->average('price');
 
-                Log::info('Calculated average price for period ' . $period . ': ' . $averagePrice);
-
+                // Обновление или создание записи в таблице агрегированных данных
                 ProductPriceAggregate::updateOrCreate(
                     ['product_id' => $product->id, 'period' => $period],
-                    ['average_price' => $averagePrice, 'calculated_at' => now()]
+                    ['average_price' => $averagePrice, 'calculated_at' => Carbon::now()]
                 );
-
-                Log::info('Saved aggregate data for period ' . $period);
             }
         }
-
-        Log::info('Finished calculating aggregates.');
     }
 }
