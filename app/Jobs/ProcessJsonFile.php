@@ -1,51 +1,49 @@
 <?php
-
 namespace App\Jobs;
 
-use App\Models\Product;
-use App\Models\ProductPrice;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Storage;
+use App\Models\Product;
+use App\Models\ProductPrice;
+use Carbon\Carbon;
 
 class ProcessJsonFile implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    protected $path;
-    /**
-     * Create a new job instance.
-     */
-    public function __construct($path)
+    protected $filePath;
+
+    public function __construct($filePath)
     {
-        //
-        $this->path = $path;
+        $this->filePath = $filePath;
     }
 
-    /**
-     * Execute the job.
-     */
-    public function handle(): void
+    public function handle()
     {
-        //
-        $json   =   Storage::get($this->path);
-        $data   =   json_decode($json, true);
+        $fileContents = Storage::get($this->filePath);
+        $products = json_decode($fileContents, true);
 
-        foreach ($data as $i) {
-            $product = Product::updateOrCreate(
-                ['name' => $i['name']],
-                ['description' => $i['description']]
+        foreach ($products as $productData) {
+            #$product = Product::updateOrCreate(
+            $product = Product::firstOrNew(
+                ['name' => $productData['name']],
             );
 
-            ProductPrice::updateOrCreate(
-                ['product_id' => $product->id, 'date' => $i['date']],
-                ['price' => $i['price']]
+            $product->description = $productData['description'];
+            $product->save();
+
+            $productPrice = ProductPrice::firstOrNew(
+                [
+                    'product_id' => $product->id,
+                    'date' => Carbon::parse($productData['date']),
+                ]
             );
+            $productPrice->price = $productData['price'];
+            $productPrice->save();
         }
-
-        CalculateAggregates::dispatch();
     }
 }

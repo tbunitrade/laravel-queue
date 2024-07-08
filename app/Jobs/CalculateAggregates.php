@@ -10,18 +10,11 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Carbon\Carbon;
 
 class CalculateAggregates implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
-
-    /**
-     * Create a new job instance.
-     */
-    public function __construct()
-    {
-        //
-    }
 
     /**
      * Execute the job.
@@ -33,7 +26,6 @@ class CalculateAggregates implements ShouldQueue
             '3_days' => 3,
             '7_days' => 7,
             '30_days' => 30,
-
         ];
 
         foreach (Product::all() as $product)
@@ -41,6 +33,13 @@ class CalculateAggregates implements ShouldQueue
             foreach ($periods as $period => $days)
             {
                 $averagePrice = ProductPrice::where('product_id', $product->id)
+                    ->where('date', '>=', Carbon::today()->subDays($days))
+                    ->average('price');
+
+                ProductPriceAggregate::updateOrCreate(
+                    ['product_id' => $product->id, 'period' => $period],
+                    ['average_price' => $averagePrice, 'calculated_at' => now()]
+                );
             }
         }
     }

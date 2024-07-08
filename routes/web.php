@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\FileUploadController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -18,4 +19,7 @@ Route::get('/', function () {
 });
 
 
-Route::post('/upload', [ProductController::class, 'upload'])->name('upload');
+#Route::post('/upload', [ProductController::class, 'upload'])->name('upload');
+
+Route::get('/', [FileUploadController::class, 'showForm']);
+Route::post('/upload', [FileUploadController::class, 'uploadFile']);

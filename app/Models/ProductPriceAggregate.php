@@ -8,4 +8,6 @@ use Illuminate\Database\Eloquent\Model;
 class ProductPriceAggregate extends Model
 {
     use HasFactory;
+
+    protected $fillable = ['product_id', 'period', 'average_price', 'calculated_at'];
 }
